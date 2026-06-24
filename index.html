@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>3D Model Preview</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main class="viewer-shell">
+      <section class="viewer" aria-label="3D model preview">
+        <canvas id="modelCanvas" aria-label="Interactive 3D model"></canvas>
+
+        <header class="top-bar">
+          <div>
+            <h1>3D Model Preview</h1>
+            <p>Drag to rotate &middot; Pinch to zoom</p>
+          </div>
+        </header>
+
+        <button
+          id="autoRotateButton"
+          class="icon-button"
+          type="button"
+          aria-label="Start auto rotate"
+          aria-pressed="false"
+          title="Auto rotate"
+        >
+          <span aria-hidden="true">R</span>
+        </button>
+
+        <aside class="model-card" aria-label="Model information">
+          <div class="model-copy">
+            <span class="eyebrow">Demo GLB Model</span>
+            <strong>Realtime 3D Preview</strong>
+          </div>
+          <button id="resetButton" class="reset-button" type="button">Reset View</button>
+        </aside>
+
+        <aside id="debugPanel" class="debug-panel is-collapsed" aria-label="Preview parameter controls">
+          <button id="debugToggle" class="debug-toggle" type="button" aria-expanded="false">
+            Tune
+          </button>
+
+          <div class="debug-content">
+            <div class="debug-head">
+              <div>
+                <span class="debug-kicker">Live Config</span>
+                <strong>Preview Tuning</strong>
+              </div>
+              <button id="copyConfigButton" class="copy-config-button" type="button">Copy Config</button>
+            </div>
+
+            <div class="debug-group">
+              <span class="debug-label">Background</span>
+              <div class="swatch-row" id="backgroundSwatches" aria-label="Background color presets"></div>
+            </div>
+
+            <div class="debug-group">
+              <span class="debug-label">Material</span>
+              <div class="swatch-row" id="materialSwatches" aria-label="Material color presets"></div>
+            </div>
+
+            <div class="debug-group">
+              <span class="debug-label">Light Preset</span>
+              <div class="preset-grid" id="lightPresets"></div>
+            </div>
+
+            <div class="debug-group compact-group">
+              <span class="debug-label">Light Boost</span>
+              <div class="stepper-row">
+                <button id="lightDownButton" class="step-button" type="button">-</button>
+                <span id="lightBoostValue" class="step-value">1.00x</span>
+                <button id="lightUpButton" class="step-button" type="button">+</button>
+              </div>
+            </div>
+
+            <div class="debug-group light-control-group" data-light-controls="a">
+              <span class="debug-label">Light A · Key Light</span>
+              <label class="range-control">
+                <span>angle <strong id="lightAAngleValue">45</strong></span>
+                <input id="lightAAngleRange" type="range" min="0" max="360" step="1" value="45" />
+              </label>
+              <label class="range-control">
+                <span>height <strong id="lightAHeightValue">30</strong></span>
+                <input id="lightAHeightRange" type="range" min="0" max="80" step="1" value="30" />
+              </label>
+              <label class="range-control">
+                <span>radius <strong id="lightARadiusValue">28</strong></span>
+                <input id="lightARadiusRange" type="range" min="5" max="80" step="1" value="28" />
+              </label>
+              <label class="range-control">
+                <span>intensity <strong id="lightAIntensityValue">2.20</strong></span>
+                <input id="lightAIntensityRange" type="range" min="0" max="5" step="0.05" value="2.2" />
+              </label>
+              <label class="color-control">
+                <span>color <strong id="lightAColorValue">#FFFFFF</strong></span>
+                <input id="lightAColorInput" type="color" value="#ffffff" />
+              </label>
+            </div>
+
+            <div class="debug-group light-control-group" data-light-controls="b">
+              <span class="debug-label">Light B · Fill Light</span>
+              <label class="range-control">
+                <span>angle <strong id="lightBAngleValue">218</strong></span>
+                <input id="lightBAngleRange" type="range" min="0" max="360" step="1" value="218" />
+              </label>
+              <label class="range-control">
+                <span>height <strong id="lightBHeightValue">18</strong></span>
+                <input id="lightBHeightRange" type="range" min="0" max="80" step="1" value="18" />
+              </label>
+              <label class="range-control">
+                <span>radius <strong id="lightBRadiusValue">32</strong></span>
+                <input id="lightBRadiusRange" type="range" min="5" max="80" step="1" value="32" />
+              </label>
+              <label class="range-control">
+                <span>intensity <strong id="lightBIntensityValue">1.40</strong></span>
+                <input id="lightBIntensityRange" type="range" min="0" max="5" step="0.05" value="1.4" />
+              </label>
+              <label class="color-control">
+                <span>color <strong id="lightBColorValue">#5C8DFF</strong></span>
+                <input id="lightBColorInput" type="color" value="#5c8dff" />
+              </label>
+            </div>
+
+            <div class="debug-group">
+              <label class="range-control">
+                <span>metalness <strong id="metalnessValue">0.75</strong></span>
+                <input id="metalnessRange" type="range" min="0" max="1" step="0.01" value="0.75" />
+              </label>
+              <label class="range-control">
+                <span>roughness <strong id="roughnessValue">0.22</strong></span>
+                <input id="roughnessRange" type="range" min="0" max="1" step="0.01" value="0.22" />
+              </label>
+              <label class="range-control">
+                <span>envMapIntensity <strong id="envMapIntensityValue">1.60</strong></span>
+                <input id="envMapIntensityRange" type="range" min="0" max="4" step="0.05" value="1.6" />
+              </label>
+            </div>
+
+            <pre id="configOutput" class="config-output" aria-label="Current parameter output"></pre>
+            <p id="copyStatus" class="copy-status" aria-live="polite"></p>
+          </div>
+        </aside>
+
+        <div id="loading" class="overlay-panel loading-panel" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Loading model...</span>
+        </div>
+
+        <div id="error" class="overlay-panel error-panel" role="alert" hidden>
+          <strong>Model failed to load</strong>
+          <span>Please check the model path or file format, then refresh the page.</span>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>
