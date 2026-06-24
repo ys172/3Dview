@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>3D Model Preview</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main class="viewer-shell">
+      <section class="viewer" aria-label="3D model preview">
+        <canvas id="modelCanvas" aria-label="Interactive 3D model"></canvas>
+
+        <header class="top-bar">
+          <div>
+            <h1>3D Model Preview</h1>
+            <p>Drag to rotate · Pinch to zoom</p>
+          </div>
+        </header>
+
+        <button
+          id="autoRotateButton"
+          class="icon-button"
+          type="button"
+          aria-label="Start auto rotate"
+          aria-pressed="false"
+          title="Auto rotate"
+        >
+          <span aria-hidden="true">R</span>
+        </button>
+
+        <aside class="model-card" aria-label="Model information">
+          <div class="model-copy">
+            <span class="eyebrow">Demo GLB Model</span>
+            <strong>Realtime 3D Preview</strong>
+          </div>
+          <button id="resetButton" class="reset-button" type="button">Reset View</button>
+        </aside>
+
+        <div id="loading" class="overlay-panel loading-panel" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Loading model...</span>
+        </div>
+
+        <div id="error" class="overlay-panel error-panel" role="alert" hidden>
+          <strong>Model failed to load</strong>
+          <span>Please check the model path or file format, then refresh the page.</span>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>
