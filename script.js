@@ -146,7 +146,7 @@ const previewConfig = {
 };
 
 const DEFAULT_CAMERA = {
-  position: { x: -0.228, y: 10.263, z: -13.473 },
+  position: { x: -0.296, y: 13.33, z: -17.499 },
   target: { x: 0, y: 0, z: 0 },
   fov: 36,
 };
@@ -283,7 +283,7 @@ function getLabelColor(number) {
   if (number >= 1 && number <= 5) return "#009FDC";
   if (number === 6) return "#E31E91";
   if (number === 7 || number === 8) return "#FF7F1A";
-  if (number === 9) return "#FFE600";
+  if (number === 9) return "#FFED00";
   return "#009FDC";
 }
 
