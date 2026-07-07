@@ -7,8 +7,10 @@ import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer
 const MODEL_URL = "./assets/models/demo.glb";
 const MIN_POLAR_ANGLE = Math.PI / 6;
 const MAX_POLAR_ANGLE = Math.PI / 2.2;
-const MIN_ZOOM_DISTANCE = 5;
-const MAX_ZOOM_DISTANCE = 150;
+const CAMERA_DISTANCE_LIMITS = {
+  min: 8,
+  max: 22,
+};
 const LABEL_ANCHOR_PATTERN = /^Lab_(\d+)/;
 
 const viewer = document.querySelector(".viewer");
@@ -28,9 +30,13 @@ const lightBoostValue = document.querySelector("#lightBoostValue");
 const metalnessRange = document.querySelector("#metalnessRange");
 const roughnessRange = document.querySelector("#roughnessRange");
 const envMapIntensityRange = document.querySelector("#envMapIntensityRange");
+const cameraFovRange = document.querySelector("#cameraFovRange");
+const cameraDistanceRange = document.querySelector("#cameraDistanceRange");
 const metalnessValue = document.querySelector("#metalnessValue");
 const roughnessValue = document.querySelector("#roughnessValue");
 const envMapIntensityValue = document.querySelector("#envMapIntensityValue");
+const cameraFovValue = document.querySelector("#cameraFovValue");
+const cameraDistanceValue = document.querySelector("#cameraDistanceValue");
 const lightControlFields = {
   a: {
     angleRange: document.querySelector("#lightAAngleRange"),
@@ -59,6 +65,7 @@ const lightControlFields = {
 };
 const configOutput = document.querySelector("#configOutput");
 const copyConfigButton = document.querySelector("#copyConfigButton");
+const copyCameraButton = document.querySelector("#copyCameraButton");
 const copyStatus = document.querySelector("#copyStatus");
 
 const DEFAULT_LIGHT_A = {
@@ -124,6 +131,7 @@ const PREVIEW_CONFIG = {
   metalness: 1,
   roughness: 0.16,
   envMapIntensity: 1.1,
+  cameraFov: 35,
   lightPreset: "Dark Glass",
   lightBoost: 1,
   ...LIGHT_PRESETS["Dark Glass"],
@@ -137,6 +145,12 @@ const previewConfig = {
   lightB: { ...PREVIEW_CONFIG.lightB },
 };
 
+const DEFAULT_CAMERA = {
+  position: { x: -0.228, y: 10.263, z: -13.473 },
+  target: { x: 0, y: 0, z: 0 },
+  fov: 36,
+};
+
 let initialCameraPosition = new THREE.Vector3();
 let initialControlsTarget = new THREE.Vector3();
 let modelRoot = null;
@@ -146,7 +160,7 @@ const numberLabels = [];
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(previewConfig.backgroundColor);
 
-const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 10000);
+const camera = new THREE.PerspectiveCamera(previewConfig.cameraFov, 1, 0.01, 10000);
 camera.position.set(0, 1.5, 5);
 
 const renderer = new THREE.WebGLRenderer({
@@ -182,8 +196,9 @@ controls.autoRotate = false;
 controls.autoRotateSpeed = 1.1;
 controls.minPolarAngle = MIN_POLAR_ANGLE;
 controls.maxPolarAngle = MAX_POLAR_ANGLE;
-controls.minDistance = MIN_ZOOM_DISTANCE;
-controls.maxDistance = MAX_ZOOM_DISTANCE;
+controls.minDistance = CAMERA_DISTANCE_LIMITS.min;
+controls.maxDistance = CAMERA_DISTANCE_LIMITS.max;
+controls.addEventListener("change", updateDebugOutput);
 
 const ambientLight = new THREE.AmbientLight(0x9dbdff, previewConfig.ambientIntensity);
 scene.add(ambientLight);
@@ -265,11 +280,11 @@ function enhanceModelMaterials(model) {
 }
 
 function getLabelColor(number) {
-  if (number >= 1 && number <= 5) return "#2f72ff";
-  if (number === 6) return "#d94d9b";
-  if (number === 7 || number === 8) return "#f28a1a";
-  if (number === 9) return "#d8b21f";
-  return "#5c8dff";
+  if (number >= 1 && number <= 5) return "#009FDC";
+  if (number === 6) return "#E31E91";
+  if (number === 7 || number === 8) return "#FF7F1A";
+  if (number === 9) return "#FFE600";
+  return "#009FDC";
 }
 
 function createNumberLabel(number, anchorObject) {
@@ -317,6 +332,21 @@ function createLabelsFromAnchors(root) {
 
 function formatNumber(value) {
   return Number(value).toFixed(2);
+}
+
+function formatCameraNumber(value) {
+  return Number(value).toFixed(3);
+}
+
+function getCameraDistance() {
+  return camera.position.distanceTo(controls.target);
+}
+
+function setCameraDistance(distance) {
+  const direction = camera.position.clone().sub(controls.target).normalize();
+  camera.position.copy(controls.target.clone().add(direction.multiplyScalar(distance)));
+  controls.update();
+  updateDebugOutput();
 }
 
 function updateMaterials() {
@@ -367,6 +397,47 @@ function lightConfigText(lightConfig) {
     intensity: ${formatNumber(lightConfig.intensity)},
     color: '${lightConfig.color}'
   }`;
+}
+
+function getCameraView() {
+  const orbit = (THREE.MathUtils.radToDeg(controls.getAzimuthalAngle()) + 360) % 360;
+  const pitch = 90 - THREE.MathUtils.radToDeg(controls.getPolarAngle());
+
+  return {
+    orbit,
+    pitch,
+    distance: getCameraDistance(),
+    fov: camera.fov,
+    position: camera.position,
+    target: controls.target,
+  };
+}
+
+function cameraViewText() {
+  const cameraView = getCameraView();
+
+  return `const CAMERA_VIEW = {
+  orbit: ${formatCameraNumber(cameraView.orbit)},
+  pitch: ${formatCameraNumber(cameraView.pitch)},
+  distance: ${formatCameraNumber(cameraView.distance)},
+  fov: ${formatCameraNumber(cameraView.fov)},
+  position: {
+    x: ${formatCameraNumber(cameraView.position.x)},
+    y: ${formatCameraNumber(cameraView.position.y)},
+    z: ${formatCameraNumber(cameraView.position.z)}
+  },
+  target: {
+    x: ${formatCameraNumber(cameraView.target.x)},
+    y: ${formatCameraNumber(cameraView.target.y)},
+    z: ${formatCameraNumber(cameraView.target.z)}
+  }
+};
+
+camera.position.set(${formatCameraNumber(cameraView.position.x)}, ${formatCameraNumber(cameraView.position.y)}, ${formatCameraNumber(cameraView.position.z)});
+controls.target.set(${formatCameraNumber(cameraView.target.x)}, ${formatCameraNumber(cameraView.target.y)}, ${formatCameraNumber(cameraView.target.z)});
+camera.fov = ${formatCameraNumber(cameraView.fov)};
+camera.updateProjectionMatrix();
+controls.update();`;
 }
 
 function configText() {
@@ -421,12 +492,18 @@ function updateLightControlValues(lightKey, lightConfig) {
 }
 
 function updateDebugOutput() {
+  const cameraDistance = getCameraDistance();
+
   metalnessRange.value = String(previewConfig.metalness);
   roughnessRange.value = String(previewConfig.roughness);
   envMapIntensityRange.value = String(previewConfig.envMapIntensity);
+  cameraFovRange.value = String(camera.fov);
+  cameraDistanceRange.value = String(cameraDistance);
   metalnessValue.textContent = formatNumber(previewConfig.metalness);
   roughnessValue.textContent = formatNumber(previewConfig.roughness);
   envMapIntensityValue.textContent = formatNumber(previewConfig.envMapIntensity);
+  cameraFovValue.textContent = formatCameraNumber(camera.fov);
+  cameraDistanceValue.textContent = formatCameraNumber(cameraDistance);
   updateLightControlValues("a", previewConfig.lightA);
   updateLightControlValues("b", previewConfig.lightB);
   lightBoostValue.textContent = `${formatNumber(previewConfig.lightBoost)}x`;
@@ -500,7 +577,41 @@ function applyLightPreset(name) {
   applyPreviewConfig();
 }
 
+async function copyText(text, button, successMessage) {
+  configOutput.textContent = text;
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      throw new Error("Clipboard API unavailable");
+    }
+    copyStatus.textContent = successMessage;
+    button.classList.add("is-copied");
+    window.setTimeout(() => button.classList.remove("is-copied"), 900);
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.top = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    const copied = document.execCommand("copy");
+    textarea.remove();
+
+    copyStatus.textContent = copied ? successMessage : "Copy failed. Select the output text manually.";
+    button.classList.toggle("is-copied", copied);
+    window.setTimeout(() => button.classList.remove("is-copied"), 900);
+  }
+}
+
 function initializeDebugPanel() {
+  cameraDistanceRange.min = String(CAMERA_DISTANCE_LIMITS.min);
+  cameraDistanceRange.max = String(CAMERA_DISTANCE_LIMITS.max);
+
   BACKGROUND_COLORS.forEach((color) => {
     backgroundSwatches.appendChild(createColorSwatch(color, "Background"));
   });
@@ -551,40 +662,26 @@ function initializeDebugPanel() {
     applyPreviewConfig();
   });
 
+  cameraFovRange.addEventListener("input", () => {
+    previewConfig.cameraFov = Number(cameraFovRange.value);
+    camera.fov = previewConfig.cameraFov;
+    camera.updateProjectionMatrix();
+    updateDebugOutput();
+  });
+
+  cameraDistanceRange.addEventListener("input", () => {
+    setCameraDistance(Number(cameraDistanceRange.value));
+  });
+
   bindLightControls("a");
   bindLightControls("b");
 
   copyConfigButton.addEventListener("click", async () => {
-    const text = configText();
+    await copyText(configText(), copyConfigButton, "Copied current preview config.");
+  });
 
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        throw new Error("Clipboard API unavailable");
-      }
-      copyStatus.textContent = "Copied current config.";
-      copyConfigButton.classList.add("is-copied");
-      window.setTimeout(() => copyConfigButton.classList.remove("is-copied"), 900);
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.setAttribute("readonly", "");
-      textarea.style.position = "fixed";
-      textarea.style.left = "-9999px";
-      textarea.style.top = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-
-      const copied = document.execCommand("copy");
-      textarea.remove();
-
-      copyStatus.textContent = copied
-        ? "Copied current config."
-        : "Copy failed. Select the config text manually.";
-      copyConfigButton.classList.toggle("is-copied", copied);
-      window.setTimeout(() => copyConfigButton.classList.remove("is-copied"), 900);
-    }
+  copyCameraButton.addEventListener("click", async () => {
+    await copyText(cameraViewText(), copyCameraButton, "Copied current camera view.");
   });
 
   applyPreviewConfig();
@@ -616,24 +713,31 @@ function frameModel(model) {
 
   camera.near = Math.max(distance / 1000, 0.01);
   camera.far = Math.max(distance * 1000, 1000);
-  camera.position.set(distance * 0.55, distance * 0.35, distance);
   camera.updateProjectionMatrix();
 
   controls.target.set(0, 0, 0);
-  controls.minDistance = MIN_ZOOM_DISTANCE;
-  controls.maxDistance = MAX_ZOOM_DISTANCE;
+  controls.minDistance = CAMERA_DISTANCE_LIMITS.min;
+  controls.maxDistance = CAMERA_DISTANCE_LIMITS.max;
   controls.update();
 
   initialCameraPosition.copy(camera.position);
   initialControlsTarget.copy(controls.target);
 }
 
+function applyCameraView(view) {
+  camera.position.set(view.position.x, view.position.y, view.position.z);
+  controls.target.set(view.target.x, view.target.y, view.target.z);
+  camera.fov = view.fov;
+  previewConfig.cameraFov = view.fov;
+  camera.updateProjectionMatrix();
+  controls.update();
+  updateDebugOutput();
+}
+
 function resetView() {
   if (!modelRoot) return;
 
-  camera.position.copy(initialCameraPosition);
-  controls.target.copy(initialControlsTarget);
-  controls.update();
+  applyCameraView(DEFAULT_CAMERA);
 }
 
 function setAutoRotate(isEnabled) {
@@ -661,6 +765,7 @@ loader.load(
     scene.add(model);
     resizeRenderer();
     frameModel(model);
+    applyCameraView(DEFAULT_CAMERA);
     enhanceModelMaterials(model);
     createLabelsFromAnchors(model);
     loadingEl.hidden = true;

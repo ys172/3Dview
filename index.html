@@ -56,7 +56,10 @@
                 <span class="debug-kicker">Live Config</span>
                 <strong>Preview Tuning</strong>
               </div>
-              <button id="copyConfigButton" class="copy-config-button" type="button">Copy Config</button>
+              <div class="debug-actions">
+                <button id="copyConfigButton" class="copy-config-button" type="button">Copy Config</button>
+                <button id="copyCameraButton" class="copy-config-button" type="button">Copy Camera</button>
+              </div>
             </div>
 
             <div class="debug-group">
@@ -143,6 +146,18 @@
               <label class="range-control">
                 <span>envMapIntensity <strong id="envMapIntensityValue">1.10</strong></span>
                 <input id="envMapIntensityRange" type="range" min="0" max="4" step="0.05" value="1.1" />
+              </label>
+            </div>
+
+            <div class="debug-group">
+              <span class="debug-label">Camera</span>
+              <label class="range-control">
+                <span>Camera FOV <strong id="cameraFovValue">35</strong></span>
+                <input id="cameraFovRange" type="range" min="20" max="65" step="1" value="35" />
+              </label>
+              <label class="range-control">
+                <span>Camera Distance <strong id="cameraDistanceValue">16.929</strong></span>
+                <input id="cameraDistanceRange" type="range" min="8" max="22" step="0.1" value="16.9" />
               </label>
             </div>
 
