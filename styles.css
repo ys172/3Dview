@@ -443,7 +443,7 @@ button {
   line-height: 30px;
   text-align: center;
   user-select: none;
-  pointer-events: auto;
+  pointer-events: none;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
   transform: translate(-50%, -50%);
 }
@@ -453,35 +453,35 @@ button {
 }
 
 .text-label {
-  pointer-events: none;
-  user-select: none;
-}
-
-.text-label-inner {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 8px;
-  border-radius: 2px;
   background: transparent;
   color: #ffffff;
   font-family: "DIN-Medium", Arial, sans-serif;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 700;
   line-height: 1;
+  letter-spacing: 0.2px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
   white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+
+.text-label-inner {
+  background: transparent;
 }
 
 .text-label[data-id="4"] .text-label-inner,
 .text-label[data-id="5"] .text-label-inner,
 .text-label[data-id="8"] .text-label-inner {
-  transform: translateX(calc(50% + 10px));
+  transform: translateX(calc(50% + 18px));
 }
 
 .text-label[data-id="2"] .text-label-inner,
 .text-label[data-id="3"] .text-label-inner,
 .text-label[data-id="6"] .text-label-inner,
-.text-label[data-id="7"] .text-label-inner {
-  transform: translateY(calc(50% + 10px));
+.text-label[data-id="7"] .text-label-inner,
+.text-label[data-id="belt"] .text-label-inner {
+  transform: translateY(calc(50% + 14px));
 }
 
 @media (max-width: 768px) {
@@ -493,8 +493,7 @@ button {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   }
 
-  .text-label-inner {
-    padding: 3px 6px;
+  .text-label {
     font-size: 11px;
   }
 }

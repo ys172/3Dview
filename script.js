@@ -321,24 +321,23 @@ function createNumberLabel(number, anchorObject) {
   label.userData.labelNumber = number;
   scene.add(label);
   numberLabels.push(label);
-
-  if (TEXT_LABELS[number]) {
-    createTextLabel(number, anchorObject);
-  }
 }
 
 function createTextLabel(number, anchorObject) {
-  const outer = document.createElement("div");
-  outer.className = "text-label";
-  outer.dataset.id = String(number);
-  outer.dataset.anchor = anchorObject.name;
+  const text = TEXT_LABELS[number];
+  if (!text) return;
 
-  const inner = document.createElement("span");
+  const element = document.createElement("div");
+  element.className = "text-label";
+  element.dataset.id = String(number);
+  element.dataset.anchor = anchorObject.name;
+
+  const inner = document.createElement("div");
   inner.className = "text-label-inner";
-  inner.textContent = TEXT_LABELS[number];
-  outer.appendChild(inner);
+  inner.textContent = text;
+  element.appendChild(inner);
 
-  const label = new CSS2DObject(outer);
+  const label = new CSS2DObject(element);
   label.position.copy(anchorObject.getWorldPosition(new THREE.Vector3()));
 
   label.userData.anchorName = anchorObject.name;
@@ -346,6 +345,27 @@ function createTextLabel(number, anchorObject) {
   label.userData.labelType = "text";
   scene.add(label);
   numberLabels.push(label);
+}
+
+function createBeltLabel(anchorObject) {
+  const element = document.createElement("div");
+  element.className = "text-label";
+  element.dataset.id = "belt";
+  element.dataset.anchor = anchorObject.name;
+
+  const inner = document.createElement("div");
+  inner.className = "text-label-inner";
+  inner.textContent = "The Belt";
+  element.appendChild(inner);
+
+  const label = new CSS2DObject(element);
+  label.position.copy(anchorObject.getWorldPosition(new THREE.Vector3()));
+
+  label.userData.anchorName = anchorObject.name;
+  label.userData.labelType = "belt";
+  scene.add(label);
+  numberLabels.push(label);
+  console.log("The Belt Label Created");
 }
 
 function clearNumberLabels() {
@@ -372,7 +392,16 @@ function createLabelsFromAnchors(root) {
 
   anchors
     .sort((a, b) => a.object.name.localeCompare(b.object.name, undefined, { numeric: true }))
-    .forEach(({ object, number }) => createNumberLabel(number, object));
+    .forEach(({ object, number }) => {
+      createNumberLabel(number, object);
+      createTextLabel(number, object);
+    });
+
+  const beltAnchor = anchors.find(({ object }) => object.name === "Lab_9-2")?.object;
+  if (beltAnchor) {
+    console.log("The Belt Anchor:", beltAnchor.position);
+    createBeltLabel(beltAnchor);
+  }
 }
 
 function formatNumber(value) {
