@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "DIN-Medium";
+  src: url("./assets/fonts/DIN-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
   font-family:
@@ -444,6 +452,38 @@ button {
   color: #000000;
 }
 
+.text-label {
+  pointer-events: none;
+  user-select: none;
+}
+
+.text-label-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 2px;
+  background: transparent;
+  color: #ffffff;
+  font-family: "DIN-Medium", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.text-label[data-id="4"] .text-label-inner,
+.text-label[data-id="5"] .text-label-inner,
+.text-label[data-id="8"] .text-label-inner {
+  transform: translateX(calc(50% + 10px));
+}
+
+.text-label[data-id="2"] .text-label-inner,
+.text-label[data-id="3"] .text-label-inner,
+.text-label[data-id="6"] .text-label-inner,
+.text-label[data-id="7"] .text-label-inner {
+  transform: translateY(calc(50% + 10px));
+}
+
 @media (max-width: 768px) {
   .number-label {
     width: 24px;
@@ -451,6 +491,11 @@ button {
     font-size: 14px;
     line-height: 24px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+
+  .text-label-inner {
+    padding: 3px 6px;
+    font-size: 11px;
   }
 }
 

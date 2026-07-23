@@ -11,6 +11,7 @@ const CAMERA_DISTANCE_LIMITS = {
   min: 8,
   max: 22,
 };
+const RESET_VIEW_DURATION = 1500;
 const LABEL_ANCHOR_PATTERN = /^Lab_(\d+)/;
 
 const viewer = document.querySelector(".viewer");
@@ -131,7 +132,7 @@ const PREVIEW_CONFIG = {
   metalness: 1,
   roughness: 0.16,
   envMapIntensity: 1.1,
-  cameraFov: 35,
+  cameraFov: 36,
   lightPreset: "Dark Glass",
   lightBoost: 1,
   ...LIGHT_PRESETS["Dark Glass"],
@@ -151,6 +152,16 @@ const DEFAULT_CAMERA = {
   fov: 36,
 };
 
+const TEXT_LABELS = {
+  2: "TWO itc",
+  3: "Tower A",
+  4: "Tower B",
+  5: "LOT 3",
+  6: "ANdAZ",
+  7: "ITC Mall",
+  8: "ONE itc",
+};
+
 let initialCameraPosition = new THREE.Vector3();
 let initialControlsTarget = new THREE.Vector3();
 let modelRoot = null;
@@ -160,8 +171,12 @@ const numberLabels = [];
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(previewConfig.backgroundColor);
 
-const camera = new THREE.PerspectiveCamera(previewConfig.cameraFov, 1, 0.01, 10000);
-camera.position.set(0, 1.5, 5);
+const camera = new THREE.PerspectiveCamera(previewConfig.cameraFov, 1, 0.1, 1000);
+camera.position.set(
+  DEFAULT_CAMERA.position.x,
+  DEFAULT_CAMERA.position.y,
+  DEFAULT_CAMERA.position.z,
+);
 
 const renderer = new THREE.WebGLRenderer({
   canvas,
@@ -188,6 +203,11 @@ scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).textur
 scene.environmentIntensity = 1.35;
 
 const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(
+  DEFAULT_CAMERA.target.x,
+  DEFAULT_CAMERA.target.y,
+  DEFAULT_CAMERA.target.z,
+);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.enablePan = true;
@@ -218,12 +238,12 @@ const fillLight = new THREE.DirectionalLight(previewConfig.lightB.color, preview
 fillLight.target = lightTarget;
 scene.add(fillLight);
 
-const frontSoftLight = new THREE.DirectionalLight(0xdcebff, previewConfig.frontSoftIntensity);
-frontSoftLight.position.set(0, 12, 30);
+const frontSoftLight = new THREE.DirectionalLight(0xffffff, previewConfig.frontSoftIntensity);
+frontSoftLight.position.set(0, 12, 18);
 scene.add(frontSoftLight);
 
-const sideRimLight = new THREE.DirectionalLight(0x78aaff, previewConfig.sideRimIntensity);
-sideRimLight.position.set(-28, 10, 16);
+const sideRimLight = new THREE.DirectionalLight(0x8bb5ff, previewConfig.sideRimIntensity);
+sideRimLight.position.set(-18, 12, -10);
 scene.add(sideRimLight);
 
 const loader = new GLTFLoader();
@@ -299,6 +319,31 @@ function createNumberLabel(number, anchorObject) {
   label.position.copy(anchorObject.getWorldPosition(new THREE.Vector3()));
   label.userData.anchorName = anchorObject.name;
   label.userData.labelNumber = number;
+  scene.add(label);
+  numberLabels.push(label);
+
+  if (TEXT_LABELS[number]) {
+    createTextLabel(number, anchorObject);
+  }
+}
+
+function createTextLabel(number, anchorObject) {
+  const outer = document.createElement("div");
+  outer.className = "text-label";
+  outer.dataset.id = String(number);
+  outer.dataset.anchor = anchorObject.name;
+
+  const inner = document.createElement("span");
+  inner.className = "text-label-inner";
+  inner.textContent = TEXT_LABELS[number];
+  outer.appendChild(inner);
+
+  const label = new CSS2DObject(outer);
+  label.position.copy(anchorObject.getWorldPosition(new THREE.Vector3()));
+
+  label.userData.anchorName = anchorObject.name;
+  label.userData.labelNumber = number;
+  label.userData.labelType = "text";
   scene.add(label);
   numberLabels.push(label);
 }
@@ -711,8 +756,8 @@ function frameModel(model) {
   const fitWidthDistance = fitHeightDistance / camera.aspect;
   const distance = Math.max(fitHeightDistance, fitWidthDistance) * 1.35;
 
-  camera.near = Math.max(distance / 1000, 0.01);
-  camera.far = Math.max(distance * 1000, 1000);
+  camera.near = Math.max(0.01, maxSize / 1000);
+  camera.far = Math.max(100, maxSize * 10);
   camera.updateProjectionMatrix();
 
   controls.target.set(0, 0, 0);
@@ -737,7 +782,45 @@ function applyCameraView(view) {
 function resetView() {
   if (!modelRoot) return;
 
-  applyCameraView(DEFAULT_CAMERA);
+  const startTime = performance.now();
+  const startPosition = camera.position.clone();
+  const startTarget = controls.target.clone();
+  const startFov = camera.fov;
+  const endPosition = new THREE.Vector3(
+    DEFAULT_CAMERA.position.x,
+    DEFAULT_CAMERA.position.y,
+    DEFAULT_CAMERA.position.z,
+  );
+  const endTarget = new THREE.Vector3(
+    DEFAULT_CAMERA.target.x,
+    DEFAULT_CAMERA.target.y,
+    DEFAULT_CAMERA.target.z,
+  );
+
+  function easeInOutCubic(progress) {
+    return progress < 0.5
+      ? 4 * progress * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+  }
+
+  function updateResetView(currentTime) {
+    const progress = Math.min((currentTime - startTime) / RESET_VIEW_DURATION, 1);
+    const easedProgress = easeInOutCubic(progress);
+
+    camera.position.lerpVectors(startPosition, endPosition, easedProgress);
+    controls.target.lerpVectors(startTarget, endTarget, easedProgress);
+    camera.fov = THREE.MathUtils.lerp(startFov, DEFAULT_CAMERA.fov, easedProgress);
+    previewConfig.cameraFov = camera.fov;
+    camera.updateProjectionMatrix();
+    controls.update();
+    updateDebugOutput();
+
+    if (progress < 1) {
+      requestAnimationFrame(updateResetView);
+    }
+  }
+
+  requestAnimationFrame(updateResetView);
 }
 
 function setAutoRotate(isEnabled) {
